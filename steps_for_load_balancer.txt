@@ -1,0 +1,81 @@
+Steps:
+-------------------------------
+1. create EKS cluster
+2. Add Nodegroup
+3. check security groups for each worker node- if not add proper security group
+4. Deploy nginx (configmap and deployment)
+5. Deploy aws-demo (deployment) -- AWS ECR upload is necessary 
+6. Create Cluster Service for both nginx and aws-demo--add health check annotations
+7. Create role AWSLoadBalancerControllerRole
+   a. policy can be downloaded from aws 
+      curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v3.5.0/docs/install/iam_policy.json
+   b. get oidc issuer url 
+aws eks describe-cluster ^
+--name my-eks-cluster1 ^
+--region us-east-1 ^
+--query "cluster.identity.oidc.issuer" ^
+--output text
+   c. aws iam list-open-id-connect-providers
+   d. associate iam-oidc-provider 
+	   eksctl utils associate-iam-oidc-provider ^
+		  --cluster my-eks-cluster1 ^
+		  --region us-east-1 ^
+		  --approve
+   e. Create trust policy 
+      {
+		  "Version": "2012-10-17",
+		  "Statement": [
+			{
+			  "Effect": "Allow",
+			  "Principal": {
+				"Federated": "arn:aws:iam::108782095802:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/90B04151E3ABD3708690B2504CE55A48"
+			  },
+			  "Action": "sts:AssumeRoleWithWebIdentity",
+			  "Condition": {
+				"StringEquals": {
+				  "oidc.eks.us-east-1.amazonaws.com/id/90B04151E3ABD3708690B2504CE55A48:aud": "sts.amazonaws.com",
+				  "oidc.eks.us-east-1.amazonaws.com/id/90B04151E3ABD3708690B2504CE55A48:sub": "system:serviceaccount:default:lb-service-account"
+				}
+			  }
+			}
+		  ]
+		}
+	f. create role using trust policy 
+	
+aws iam create-role ^
+--role-name AWSLoadBalancerControllerRole ^
+--assume-role-policy-document file://trust_policy_aws_controller.json ^
+--description "IAM role for AWS Load Balancer Controller"
+
+	g. attach policy downloaded from aws to role 
+		  aws iam attach-role-policy ^
+		  --role-name AWSLoadBalancerControllerRole ^
+		  --policy-arn arn:aws:iam::108782095802:policy/AWSLoadBalancerControllerIAMPolicy
+8. create service account for load balancer using below yaml 
+   
+    apiVersion: v1
+	kind: ServiceAccount
+	metadata:
+	  name: lb-service-account
+	  namespace: default
+	  annotations:
+		eks.amazonaws.com/role-arn: arn:aws:iam::108782095802:role/AWSLoadBalancerControllerRole
+		
+9. create aws load balancer controller using helm 
+    helm repo add eks https://aws.github.io/eks-charts
+	helm repo update
+
+	helm uninstall aws-load-balancer-controller
+	 
+	helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller ^
+	  --set clusterName=my-eks-cluster1 ^
+	  --set vpcId=vpc-079fa9f4d03555618 ^
+	  --set serviceAccount.create=false ^
+	  --set serviceAccount.name=lb-service-account  ^
+	  --set region=us-east-1
+10. create ingress 
+11. check if alb is created
+12. check security group of alb, add required security group if not present  13. verify health check is successful 
+14. test the applications 
+ 
+  

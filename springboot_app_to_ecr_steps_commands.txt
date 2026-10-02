@@ -1,0 +1,7 @@
+mvn clean compile jib:dockerBuild
+
+docker tag demo/aws-demo:1.0.0 108782095802.dkr.ecr.us-east-1.amazonaws.com/demo/aws-demo:latest
+
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 108782095802.dkr.ecr.us-east-1.amazonaws.com
+
+docker push 108782095802.dkr.ecr.us-east-1.amazonaws.com/demo/aws-demo:latest

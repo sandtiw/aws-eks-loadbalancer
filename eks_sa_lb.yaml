@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lb-service-account
+  namespace: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::108782095802:role/AWSLoadBalancerControllerRole

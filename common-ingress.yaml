@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: common-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/security-groups: sg-052573eb4aa1aca40,sg-009457f26216eb717
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+       paths:
+         - path: /myapp
+           pathType: Prefix
+           backend:
+             service:
+               name: aws-demo-service-clusters
+               port:
+                 number: 8080
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-clusterip-service
+                port:
+                  number: 80 

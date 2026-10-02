@@ -1,0 +1,30 @@
+apiVersion:  apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  annotations:
+    kubernetes.io/change-cause: "nginx image 1.27"
+spec:
+ replicas: 3
+ minReadySeconds: 30
+ strategy: 
+  type: Recreate
+ selector:
+  matchLabels:
+   app: web
+   type: tech
+   
+ template:
+    metadata:
+      labels:
+       app: web
+       type: tech
+    spec:
+     containers:
+     - image: nginx:1.27
+       name: nginx-demo
+       ports:
+       - containerPort: 80
+       envFrom: 
+       - configMapRef:
+           name: nginx-configmap

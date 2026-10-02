@@ -1,0 +1,13 @@
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+
+helm uninstall aws-load-balancer-controller
+ 
+helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller ^
+  --set clusterName=my-eks-cluster1 ^
+  --set vpcId=vpc-079fa9f4d03555618 ^
+  --set serviceAccount.create=false ^
+  --set serviceAccount.name=lb-service-account  ^
+  --set region=us-east-1
+ 
+  
